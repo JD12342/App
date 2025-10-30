@@ -4,13 +4,28 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
-1. Install dependencies
+1. Copy the sample environment file and fill in your Firebase **Web** credentials (not the Android values from `google-services.json`).
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+   | Variable | Description |
+   | --- | --- |
+   | `EXPO_PUBLIC_FIREBASE_API_KEY` | Web API key from Firebase console |
+   | `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN` | Usually `<project>.firebaseapp.com` |
+   | `EXPO_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project ID |
+   | `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET` | Storage bucket URL |
+   | `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Project number |
+   | `EXPO_PUBLIC_FIREBASE_APP_ID` | Web app ID (`1:<sender>:web:<hash>`) |
+
+2. Install dependencies
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Start the app
 
    ```bash
    npx expo start
