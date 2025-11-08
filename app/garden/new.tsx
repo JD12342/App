@@ -1,6 +1,7 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
 import FormSection from '../../components/FormSection';
@@ -11,35 +12,14 @@ import theme from '../../lib/theme';
 
 export default function GardenFormScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string }>();
-  const isEditing = !!params.id;
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(isEditing);
 
-  // If editing, load the garden data
-  useEffect(() => {
-    if (isEditing) {
-      const loadGarden = async () => {
-        try {
-          const garden = await gardenService.getGarden(params.id);
-          if (garden) {
-            setName(garden.name);
-            setLocation(garden.location || '');
-          }
-        } catch (error) {
-          console.error('Error loading garden:', error);
-        } finally {
-          setInitialLoading(false);
-        }
-      };
-      
-      loadGarden();
-    }
-  }, [isEditing, params.id]);
+
 
   const validate = () => {
     const newErrors: { name?: string } = {};
@@ -57,21 +37,21 @@ export default function GardenFormScreen() {
     
     setIsLoading(true);
     try {
-      if (isEditing) {
-        await gardenService.updateGarden(params.id, {
-          name: name.trim(),
-          location: location.trim() || undefined,
-        });
-      } else {
-        await gardenService.createGarden({
-          name: name.trim(),
-          location: location.trim() || undefined,
-        });
+      const garden = await gardenService.createGarden({
+        name: name.trim(),
+        location: location.trim() || undefined,
+        description: description.trim() || undefined,
+      });
+      
+      if (!garden) {
+        throw new Error('Failed to create garden');
       }
+      
+      // Navigate back immediately (user sees success)
       router.back();
     } catch (error) {
       console.error('Error saving garden:', error);
-    } finally {
+      Alert.alert('Error', 'Failed to save garden. Please try again.');
       setIsLoading(false);
     }
   };
@@ -79,7 +59,7 @@ export default function GardenFormScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Header
-        title={isEditing ? 'Edit Garden' : 'Add Garden'}
+        title="Add Garden"
         showBackButton
       />
       
@@ -91,7 +71,7 @@ export default function GardenFormScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <FormSection>
+          <FormSection title="Garden Details">
             <Input
               label="Garden Name"
               value={name}
@@ -99,6 +79,7 @@ export default function GardenFormScreen() {
               placeholder="E.g., Backyard Garden"
               autoCapitalize="words"
               error={errors.name}
+              leftIcon={<MaterialIcons name="eco" size={24} color={theme.colors.textSecondary} />}
             />
 
             <Input
@@ -107,16 +88,28 @@ export default function GardenFormScreen() {
               onChangeText={setLocation}
               placeholder="E.g., Backyard, North side"
               autoCapitalize="words"
+              leftIcon={<MaterialIcons name="place" size={24} color={theme.colors.textSecondary} />}
+            />
+
+            <Input
+              label="Description (Optional)"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Tell us about your garden..."
+              multiline
+              numberOfLines={4}
+              style={styles.descriptionInput}
             />
           </FormSection>
+
+
         </ScrollView>
         
         <View style={styles.buttonContainer}>
           <Button
-            title="Save Garden"
+            title="Create Garden"
             onPress={handleSubmit}
             loading={isLoading}
-            disabled={initialLoading}
             fullWidth
             size="large"
           />
@@ -129,19 +122,30 @@ export default function GardenFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.backgroundSecondary,
   },
   keyboardAvoidingView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    padding: theme.spacing.md,
+    padding: theme.spacing.lg,
+  },
+  descriptionInput: {
+    minHeight: 120,
+    textAlignVertical: 'top',
+    paddingTop: theme.spacing.md,
   },
   buttonContainer: {
-    padding: theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.xl,
     backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
   },
 });

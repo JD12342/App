@@ -1,6 +1,7 @@
+import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../../components/Button';
 import FormSection from '../../../components/FormSection';
@@ -15,6 +16,7 @@ export default function EditGardenScreen() {
 
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -28,6 +30,7 @@ export default function EditGardenScreen() {
           if (garden) {
             setName(garden.name);
             setLocation(garden.location || '');
+            setDescription(garden.description || '');
           }
         } catch (error) {
           console.error('Error loading garden:', error);
@@ -51,6 +54,8 @@ export default function EditGardenScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
+
+
   const handleSubmit = async () => {
     if (!validate() || !id) return;
     
@@ -59,11 +64,14 @@ export default function EditGardenScreen() {
       await gardenService.updateGarden(id, {
         name: name.trim(),
         location: location.trim() || undefined,
+        description: description.trim() || undefined,
       });
+      
+      // Navigate back immediately
       router.back();
     } catch (error) {
       console.error('Error updating garden:', error);
-    } finally {
+      Alert.alert('Error', 'Failed to update garden. Please try again.');
       setIsLoading(false);
     }
   };
@@ -83,7 +91,7 @@ export default function EditGardenScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <FormSection>
+          <FormSection title="Garden Details">
             <Input
               label="Garden Name"
               value={name}
@@ -91,6 +99,7 @@ export default function EditGardenScreen() {
               placeholder="E.g., Backyard Garden"
               autoCapitalize="words"
               error={errors.name}
+              leftIcon={<MaterialIcons name="eco" size={24} color={theme.colors.textSecondary} />}
             />
 
             <Input
@@ -99,8 +108,21 @@ export default function EditGardenScreen() {
               onChangeText={setLocation}
               placeholder="E.g., Backyard, North side"
               autoCapitalize="words"
+              leftIcon={<MaterialIcons name="place" size={24} color={theme.colors.textSecondary} />}
+            />
+
+            <Input
+              label="Description (Optional)"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Tell us about your garden..."
+              multiline
+              numberOfLines={4}
+              style={styles.descriptionInput}
             />
           </FormSection>
+
+
         </ScrollView>
         
         <View style={styles.buttonContainer}>
@@ -130,6 +152,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: theme.spacing.md,
   },
+  descriptionInput: {
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+
   buttonContainer: {
     padding: theme.spacing.md,
     borderTopWidth: 1,

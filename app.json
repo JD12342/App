@@ -8,9 +8,22 @@
     "scheme": "app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F5DC"
+    },
     "ios": {
       "supportsTablet": true,
-      "userInterfaceStyle": "automatic"
+      "userInterfaceStyle": "automatic",
+      "splash": {
+        "image": "./assets/images/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F5F5DC"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show local weather conditions for your garden."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,19 +34,26 @@
       "userInterfaceStyle": "automatic",
       "softwareKeyboardLayoutMode": "resize",
       "googleServicesFile": "./google-services.json",
-      "package": "Garden.App"
+      "package": "Garden.App",
+      "permissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "splash": {
+        "image": "./assets/images/icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F5F5DC",
+        "mdpi": "./assets/images/icon.png",
+        "hdpi": "./assets/images/icon.png",
+        "xhdpi": "./assets/images/icon.png",
+        "xxhdpi": "./assets/images/icon.png",
+        "xxxhdpi": "./assets/images/icon.png"
+      }
     },
     "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#F5F5DC"
-        }
-      ]
+      "expo-router"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,4 +1,4 @@
-import { SplashScreen, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
@@ -7,10 +7,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AnimatedSplashScreen from '../components/AnimatedSplashScreen';
 import LoadingAnimation from '../components/LoadingAnimation';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { requestPermissions } from '../lib/permissions';
 import { initServices } from '../lib/services';
-
-// Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const { user, isLoading, isGuest } = useAuth();
@@ -18,23 +16,13 @@ function RootLayoutNav() {
   const [servicesReady, setServicesReady] = useState(false);
 
   useEffect(() => {
-    // Hide the default expo splash screen immediately
-    const hideSplash = async () => {
-      try {
-        await SplashScreen.hideAsync();
-      } catch (e) {
-        console.warn('Error hiding splash screen:', e);
-      }
-    };
-    hideSplash();
-  }, []);
-
-  useEffect(() => {
     let mounted = true;
     let cleanup: (() => void) | null = null;
 
     const bootstrapServices = async () => {
       try {
+        // Request necessary permissions at startup
+        await requestPermissions();
         cleanup = await initServices();
       } catch (error) {
         console.error('Failed to initialize services:', error);

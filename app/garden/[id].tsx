@@ -1,7 +1,7 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, FlatList, Image, RefreshControl, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
@@ -107,43 +107,34 @@ export default function GardenDetailScreen() {
     return (
       <Card onPress={() => handleHarvestPress(item)} style={styles.harvestCard}>
         <View style={styles.harvestCardContent}>
-          <View style={styles.harvestInfo}>
-            <Typography variant="h4" numberOfLines={1}>
-              {item.plantName}
-            </Typography>
-            
-            <View style={styles.quantityContainer}>
-              <Typography variant="body1" style={styles.quantity}>
-                {item.quantity} {item.unit}
-              </Typography>
-            </View>
-            
-            <Typography
-              variant="caption"
-              color={theme.colors.textSecondary}
-              style={styles.harvestDate}
-            >
-              {formatDate(item.date)}
+          <Typography variant="h4" numberOfLines={1}>
+            {item.plantName}
+          </Typography>
+          
+          <View style={styles.quantityContainer}>
+            <Typography style={styles.quantity}>
+              {item.quantity} count
             </Typography>
           </View>
           
-          {item.photoUrl && (
-            <View style={styles.photoContainer}>
-              <Image source={{ uri: item.photoUrl }} style={styles.photo} />
-            </View>
+          <Typography
+            style={styles.harvestDate}
+            numberOfLines={1}
+          >
+            {formatDate(item.date)}
+          </Typography>
+          
+          {item.notes && (
+            <Typography
+              variant="caption"
+              color={theme.colors.textSecondary}
+              numberOfLines={1}
+              style={styles.notes}
+            >
+              {item.notes}
+            </Typography>
           )}
         </View>
-        
-        {item.notes && (
-          <Typography
-            variant="body2"
-            color={theme.colors.textSecondary}
-            numberOfLines={2}
-            style={styles.notes}
-          >
-            {item.notes}
-          </Typography>
-        )}
       </Card>
     );
   };
@@ -193,20 +184,34 @@ export default function GardenDetailScreen() {
 
       {garden && (
         <>
-          {garden.location && (
-            <View style={styles.locationContainer}>
-              <MaterialIcons
-                name="location-on"
-                size={16}
-                color={theme.colors.textSecondary}
-              />
-              <Typography
-                variant="body2"
-                color={theme.colors.textSecondary}
-                style={styles.locationText}
-              >
-                {garden.location}
-              </Typography>
+          {(garden.location || garden.description) && (
+            <View style={styles.gardenInfoContainer}>
+              {garden.location && (
+                <View style={styles.locationContainer}>
+                  <MaterialIcons
+                    name="location-on"
+                    size={16}
+                    color={theme.colors.textSecondary}
+                  />
+                  <Typography
+                    variant="body2"
+                    color={theme.colors.textSecondary}
+                    style={styles.locationText}
+                  >
+                    {garden.location}
+                  </Typography>
+                </View>
+              )}
+              
+              {garden.description && (
+                <Typography
+                  variant="body2"
+                  color={theme.colors.textSecondary}
+                  style={styles.descriptionText}
+                >
+                  {garden.description}
+                </Typography>
+              )}
             </View>
           )}
 
@@ -249,46 +254,41 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.backgroundSecondary,
   },
+  harvestCard: {
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    minHeight: 80,
+  },
+  harvestCardContent: {
+    flex: 1,
+  },
+  harvestInfo: {
+    flex: 1,
+  },
+  quantityContainer: {
+    marginTop: 4,
+  },
+  quantity: {
+    fontSize: 14,
+    color: theme.colors.text,
+  },
+  harvestDate: {
+    marginTop: 4,
+    fontSize: 12,
+    color: theme.colors.textSecondary,
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    paddingTop: theme.spacing.sm,
   },
   locationText: {
     marginLeft: 4,
   },
   listContent: {
     padding: theme.spacing.md,
-  },
-  harvestCard: {
-    marginBottom: theme.spacing.md,
-  },
-  harvestCardContent: {
-    flexDirection: 'row',
-  },
-  harvestInfo: {
-    flex: 1,
-  },
-  quantityContainer: {
-    marginTop: theme.spacing.xs,
-  },
-  quantity: {
-    fontWeight: theme.typography.fontWeight.semiBold,
-  },
-  harvestDate: {
-    marginTop: theme.spacing.xs,
-  },
-  photoContainer: {
-    marginLeft: theme.spacing.md,
-  },
-  photo: {
-    width: 60,
-    height: 60,
-    borderRadius: theme.borderRadius.md,
   },
   notes: {
     marginTop: theme.spacing.sm,
@@ -298,5 +298,16 @@ const styles = StyleSheet.create({
   },
   headerIcon: {
     marginLeft: theme.spacing.sm,
+  },
+  gardenInfoContainer: {
+    backgroundColor: theme.colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    paddingHorizontal: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+  },
+  descriptionText: {
+    marginTop: theme.spacing.sm,
+    lineHeight: 20,
   },
 });

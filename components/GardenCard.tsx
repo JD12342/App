@@ -34,11 +34,17 @@ const GardenCard: React.FC<GardenCardProps> = ({
     >
       <View style={styles.content}>
         <View style={styles.iconContainer}>
-          <PlantIcon iconName="sprout" />
+          <View style={styles.iconBackground}>
+            <PlantIcon iconName="sprout" size={32} />
+          </View>
         </View>
         
         <View style={styles.infoContainer}>
-          <Typography variant="h3" numberOfLines={1}>
+          <Typography 
+            variant="h3" 
+            numberOfLines={1}
+            style={styles.gardenName}
+          >
             {garden.name}
           </Typography>
           
@@ -48,6 +54,7 @@ const GardenCard: React.FC<GardenCardProps> = ({
                 name="location-on"
                 size={16}
                 color={theme.colors.textSecondary}
+                style={styles.locationIcon}
               />
               <Typography
                 variant="body2"
@@ -59,9 +66,27 @@ const GardenCard: React.FC<GardenCardProps> = ({
               </Typography>
             </View>
           ) : null}
+
+          {garden.description ? (
+            <Typography
+              variant="body2"
+              color={theme.colors.textSecondary}
+              numberOfLines={2}
+              style={styles.description}
+            >
+              {garden.description}
+            </Typography>
+          ) : null}
           
           <View style={styles.harvestBadge}>
-            <Typography variant="caption" color={theme.colors.primary}>
+            <View style={styles.harvestIconContainer}>
+              <MaterialIcons
+                name="eco"
+                size={14}
+                color={theme.colors.primary}
+              />
+            </View>
+            <Typography variant="caption" color={theme.colors.primary} style={styles.harvestText}>
               {harvestCount} {harvestCount === 1 ? 'harvest' : 'harvests'} logged
             </Typography>
           </View>
@@ -73,49 +98,95 @@ const GardenCard: React.FC<GardenCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: theme.spacing.md,
-    borderLeftWidth: 4,
-    borderLeftColor: theme.colors.primary,
-    width: screenWidth - (theme.spacing.md * 2), // Adjust width based on screen size
+    marginHorizontal: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+    width: screenWidth - (theme.spacing.lg * 2),
     alignSelf: 'center',
+    minHeight: 100,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    shadowColor: theme.colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+    elevation: 2,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'nowrap',
+    padding: theme.spacing.sm,
   },
   iconContainer: {
-    width: screenWidth > 320 ? 60 : 50, // Smaller icon on very small screens
-    height: screenWidth > 320 ? 60 : 50,
-    borderRadius: 30,
-    backgroundColor: `${theme.colors.primary}15`,
+    width: 64,
+    height: 64,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: theme.spacing.md,
     flexShrink: 0,
   },
+  iconBackground: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
+    backgroundColor: `${theme.colors.primary}12`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: `${theme.colors.primary}25`,
+  },
   infoContainer: {
     flex: 1,
     flexShrink: 1,
-    minWidth: 0, // Important for text truncation
+    minWidth: 0,
+    justifyContent: 'center',
+  },
+  gardenName: {
+    color: theme.colors.text,
+    fontWeight: '700',
+    fontSize: 18,
+    letterSpacing: -0.3,
+    marginBottom: 4,
+    flex: 1,
   },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: theme.spacing.xs,
+    marginBottom: 6,
     flexWrap: 'nowrap',
   },
+  locationIcon: {
+    marginRight: theme.spacing.xs,
+  },
   locationText: {
-    marginLeft: 4,
+    marginLeft: 2,
     flexShrink: 1,
   },
   harvestBadge: {
-    marginTop: theme.spacing.sm,
-    backgroundColor: `${theme.colors.primary}15`,
+    backgroundColor: `${theme.colors.primary}10`,
     alignSelf: 'flex-start',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: theme.borderRadius.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: `${theme.colors.primary}20`,
+  },
+  harvestIconContainer: {
+    marginRight: theme.spacing.xs,
+  },
+  harvestText: {
+    fontWeight: '500',
+  },
+  description: {
+    marginBottom: 6,
+    fontSize: 13,
   },
 });
 

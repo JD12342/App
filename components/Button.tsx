@@ -6,6 +6,7 @@ import {
   Text,
   TextStyle,
   TouchableOpacity,
+  View,
   ViewStyle
 } from 'react-native';
 import theme from '../lib/theme';
@@ -15,6 +16,7 @@ interface ButtonProps {
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'text';
   size?: 'small' | 'medium' | 'large';
+  shape?: 'rounded' | 'pill';
   fullWidth?: boolean;
   disabled?: boolean;
   loading?: boolean;
@@ -32,6 +34,7 @@ const Button: React.FC<ButtonProps> = ({
   onPress,
   variant = 'primary',
   size = 'medium',
+  shape = 'rounded',
   fullWidth = false,
   disabled = false,
   loading = false,
@@ -41,10 +44,13 @@ const Button: React.FC<ButtonProps> = ({
   iconPosition = 'left'
 }) => {
   // Determine button styles based on variant
+  const shapeStyle = shape === 'pill' ? styles.pillShape : styles.roundedShape;
+
   const buttonStyles = [
     styles.button,
     styles[`${variant}Button`],
     styles[`${size}Button`],
+    shapeStyle,
     fullWidth && styles.fullWidth,
     disabled && styles.disabledButton,
     style
@@ -59,6 +65,21 @@ const Button: React.FC<ButtonProps> = ({
     textStyle
   ];
 
+  const renderIcon = (position: 'left' | 'right') => {
+    if (!icon) {
+      return null;
+    }
+
+    const wrapperStyles = [
+      styles.iconWrapper,
+      position === 'left' ? styles.iconLeft : styles.iconRight
+    ];
+
+    return <View style={wrapperStyles}>{icon}</View>;
+  };
+
+  const indicatorColor = variant === 'primary' ? theme.colors.white : theme.colors.primary;
+
   return (
     <TouchableOpacity
       style={buttonStyles}
@@ -67,15 +88,15 @@ const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator 
-          color={variant === 'primary' ? theme.colors.white : theme.colors.primary} 
-          size="small" 
+        <ActivityIndicator
+          color={indicatorColor}
+          size="small"
         />
       ) : (
         <>
-          {icon && iconPosition === 'left' && icon}
+          {iconPosition === 'left' && renderIcon('left')}
           <Text style={textStyles}>{title}</Text>
-          {icon && iconPosition === 'right' && icon}
+          {iconPosition === 'right' && renderIcon('right')}
         </>
       )}
     </TouchableOpacity>
@@ -87,11 +108,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  borderRadius: theme.borderRadius.md,
-  paddingVertical: theme.spacing.sm,
-  paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
     minHeight: 44,
     gap: theme.spacing.sm,
+  },
+  roundedShape: {
+    borderRadius: theme.borderRadius.md,
+  },
+  pillShape: {
+    borderRadius: theme.borderRadius.pill,
   },
   primaryButton: {
     backgroundColor: theme.colors.primary,
@@ -161,6 +188,16 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: theme.colors.textSecondary,
+  },
+  iconWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconLeft: {
+    marginRight: theme.spacing.xs,
+  },
+  iconRight: {
+    marginLeft: theme.spacing.xs,
   },
 });
 

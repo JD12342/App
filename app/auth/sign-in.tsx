@@ -20,7 +20,7 @@ import theme from '../../lib/theme';
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -50,6 +50,8 @@ export default function SignInScreen() {
     if (!validate()) return;
     
     setIsLoading(true);
+    setErrors({}); // Clear previous errors
+    
     try {
       if (isCreatingAccount) {
         await signUp(email, password);
@@ -63,14 +65,8 @@ export default function SignInScreen() {
       // Use our improved error handling
       const friendlyMessage = getFirebaseErrorMessage(error);
       
-      // Set field-specific errors or show general alert
-      if (friendlyMessage.toLowerCase().includes('email')) {
-        setErrors({ email: friendlyMessage });
-      } else if (friendlyMessage.toLowerCase().includes('password')) {
-        setErrors({ password: friendlyMessage });
-      } else {
-        alert(friendlyMessage);
-      }
+      // Show the error message prominently
+      setErrors({ general: friendlyMessage });
     } finally {
       setIsLoading(false);
     }
@@ -119,6 +115,15 @@ export default function SignInScreen() {
         </View>
 
         <View style={styles.formContainer}>
+          {errors.general && (
+            <View style={styles.errorContainer}>
+              <MaterialIcons name="error-outline" size={20} color={theme.colors.error} />
+              <Typography variant="body2" color={theme.colors.error} style={styles.errorText}>
+                {errors.general}
+              </Typography>
+            </View>
+          )}
+
           <Input
             label="Email"
             value={email}
@@ -231,6 +236,18 @@ const styles = StyleSheet.create({
   },
   formContainer: {
     width: '100%',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.error + '15', // 15% opacity
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.md,
+    gap: theme.spacing.sm,
+  },
+  errorText: {
+    flex: 1,
   },
   submitButton: {
     marginTop: theme.spacing.lg,

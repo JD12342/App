@@ -1,6 +1,5 @@
 import { Asset } from 'expo-asset';
 import * as Font from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
 
 /**
  * PreloadManager handles all the app's preloading tasks
@@ -18,11 +17,6 @@ class PreloadManager {
     
     this._loadPromise = (async () => {
       try {
-        // Keep splash screen visible while loading
-        await SplashScreen.preventAutoHideAsync().catch(() => {
-          // Splash screen might already be handled
-        });
-
         // Load fonts with timeout
         const fontLoadPromise = Font.loadAsync({
           'SpaceMono-Regular': require('../assets/fonts/SpaceMono-Regular.ttf'),

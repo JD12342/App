@@ -1,13 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useEffect, useState } from 'react';
-import { Dimensions, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { Alert, Dimensions, Modal, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Card from '../../components/Card';
 import EmptyState from '../../components/EmptyState';
 import Typography from '../../components/Typography';
+import { AuthContext } from '../../contexts/AuthContext';
 import { gardenService, harvestService } from '../../lib/dataService';
+import { exportGardenData } from '../../lib/exportService';
+import { showExportPermissionReminder } from '../../lib/permissions';
 import theme from '../../lib/theme';
 import { Garden, GardenTotal, Harvest, PlantTotal } from '../../types/types';
 
@@ -36,6 +39,9 @@ export default function Reports() {
   const [gardenTotals, setGardenTotals] = useState<GardenTotal[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedGardenForExport, setSelectedGardenForExport] = useState<string | 'all'>('all');
+  const { user, isGuest } = useContext(AuthContext);
 
   const loadData = useCallback(async () => {
     try {
@@ -103,18 +109,50 @@ export default function Reports() {
 
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [loadData, user, isGuest]);  // Reload when auth state changes
 
+  // Reload data when user navigates back to this tab
   useFocusEffect(
     useCallback(() => {
       loadData();
     }, [loadData])
   );
 
+  // Don't reload on focus - let auto-sync handle updates in background
+  // User can still manually pull-to-refresh if needed
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     loadData();
   }, [loadData]);
+
+  const handleExportExcel = useCallback(async () => {
+    try {
+      let selectedGardenIds: string[] = [];
+      
+      if (selectedGardenForExport === 'all') {
+        selectedGardenIds = gardens.map(g => g.id);
+      } else {
+        selectedGardenIds = [selectedGardenForExport];
+      }
+      
+      // Show permission reminder FIRST and wait for user to dismiss it
+      await showExportPermissionReminder();
+      
+      // THEN start the export (which will trigger the share dialog)
+      await exportGardenData(gardens, harvests, selectedGardenIds);
+      setShowExportModal(false);
+      
+      Alert.alert(
+        'Export Ready',
+        'Tap "Save to Files" to save the report to your Downloads folder, or choose another app to send it to.',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error exporting data:', error);
+      Alert.alert('Export Error', 'Failed to export data. Please try again.');
+    }
+  }, [selectedGardenForExport, gardens, harvests]);
 
   // Chart data preparation
   const getHarvestTrendData = () => {
@@ -203,17 +241,17 @@ export default function Reports() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <MaterialCommunityIcons 
-              name="chart-donut" 
-              size={32} 
-              color="#E6B800" 
+              name="chart-box-outline" 
+              size={36} 
+              color={theme.colors.accent}
               style={styles.headerIcon}
             />
             <View style={styles.headerText}>
-              <Typography variant="h1" style={styles.title}>
-                Garden Analytics
+              <Typography variant="h2" style={styles.title}>
+                Garden Reports
               </Typography>
-              <Typography variant="body1" style={styles.subtitle}>
-                Insights from your harvests
+              <Typography variant="body2" color={theme.colors.textSecondary}>
+                Your harvest analytics
               </Typography>
             </View>
           </View>
@@ -232,16 +270,40 @@ export default function Reports() {
             <Typography variant="body2" style={styles.statLabel}>Plant Types</Typography>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="flower" size={24} color="#8BC34A" />
+            <MaterialCommunityIcons name="leaf" size={24} color="#8BC34A" />
             <Typography variant="h2" style={styles.statNumber}>{activeGardens}</Typography>
             <Typography variant="body2" style={styles.statLabel}>Active Gardens</Typography>
           </View>
           <View style={styles.statCard}>
-            <MaterialCommunityIcons name="weight-kilogram" size={24} color="#CDDC39" />
+            <MaterialCommunityIcons name="weight" size={24} color="#CDDC39" />
             <Typography variant="h2" style={styles.statNumber}>{totalQuantity.toFixed(0)}</Typography>
             <Typography variant="body2" style={styles.statLabel}>Total Yield</Typography>
           </View>
         </View>
+
+        {/* Export Section */}
+        <Card style={styles.exportCard}>
+          <View style={styles.exportHeader}>
+            <View style={styles.exportIconContainer}>
+              <MaterialCommunityIcons name="download" size={24} color={theme.colors.accent} />
+            </View>
+            <View style={styles.exportContent}>
+              <Typography variant="h3" style={styles.exportTitle}>Export Reports</Typography>
+              <Typography variant="body2" color={theme.colors.textSecondary}>
+                Download your harvest data as Excel
+              </Typography>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.exportButton}
+            onPress={() => setShowExportModal(true)}
+          >
+            <MaterialCommunityIcons name="file-excel" size={18} color={theme.colors.white} />
+            <Typography variant="button" color={theme.colors.white} style={styles.exportButtonText}>
+              Export to Excel
+            </Typography>
+          </TouchableOpacity>
+        </Card>
 
         {/* Harvest Trend Chart */}
         <Card style={styles.chartCard}>
@@ -332,6 +394,97 @@ export default function Reports() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* Export Modal */}
+      <Modal
+        visible={showExportModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowExportModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableWithoutFeedback onPress={() => setShowExportModal(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Typography variant="h3" style={styles.modalTitle}>Export to Excel</Typography>
+              <Typography variant="body2" color={theme.colors.textSecondary}>
+                Select which gardens to include in your report
+              </Typography>
+            </View>
+
+            <View style={styles.gardenSelectionContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.gardenOption,
+                  selectedGardenForExport === 'all' && styles.gardenOptionSelected
+                ]}
+                onPress={() => setSelectedGardenForExport('all')}
+              >
+                <View style={styles.gardenOptionCheckbox}>
+                  {selectedGardenForExport === 'all' && (
+                    <MaterialCommunityIcons name="check" size={16} color={theme.colors.white} />
+                  )}
+                </View>
+                <View style={styles.gardenOptionInfo}>
+                  <Typography variant="body1" style={styles.gardenOptionText}>
+                    All Gardens
+                  </Typography>
+                  <Typography variant="caption" color={theme.colors.textSecondary}>
+                    Export data from all {gardens.length} garden{gardens.length !== 1 ? 's' : ''}
+                  </Typography>
+                </View>
+              </TouchableOpacity>
+
+              {gardens.map((garden) => (
+                <TouchableOpacity
+                  key={garden.id}
+                  style={[
+                    styles.gardenOption,
+                    selectedGardenForExport === garden.id && styles.gardenOptionSelected
+                  ]}
+                  onPress={() => setSelectedGardenForExport(garden.id)}
+                >
+                  <View style={styles.gardenOptionCheckbox}>
+                    {selectedGardenForExport === garden.id && (
+                      <MaterialCommunityIcons name="check" size={16} color={theme.colors.white} />
+                    )}
+                  </View>
+                  <View style={styles.gardenOptionInfo}>
+                    <Typography variant="body1" style={styles.gardenOptionText}>
+                      {garden.name}
+                    </Typography>
+                    <Typography variant="caption" color={theme.colors.textSecondary}>
+                      Garden • {harvests.filter(h => h.gardenId === garden.id).length} harvests
+                    </Typography>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={styles.modalCancelButton}
+                onPress={() => setShowExportModal(false)}
+              >
+                <Typography variant="button" color={theme.colors.primary}>
+                  Cancel
+                </Typography>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.modalExportButton}
+                onPress={handleExportExcel}
+              >
+                <MaterialCommunityIcons name="file-excel" size={18} color={theme.colors.white} />
+                <Typography variant="button" color={theme.colors.white} style={styles.modalExportButtonText}>
+                  Export
+                </Typography>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -339,7 +492,7 @@ export default function Reports() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flex: 1,
@@ -355,117 +508,263 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
     paddingTop: theme.spacing.xl + theme.spacing.md,
-    marginBottom: theme.spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginBottom: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    ...theme.shadows.small,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.md,
   },
   headerIcon: {
-    marginRight: theme.spacing.md,
+    color: theme.colors.accent,
   },
   headerText: {
     flex: 1,
   },
   title: {
-    color: '#2C3E50',
+    color: theme.colors.text,
     fontWeight: 'bold',
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    color: '#7F8C8D',
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
   statsContainer: {
     flexDirection: 'row',
     paddingHorizontal: theme.spacing.md,
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
+    gap: theme.spacing.sm,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     padding: theme.spacing.md,
-    marginHorizontal: theme.spacing.xs,
-    borderRadius: 12,
+    borderRadius: theme.borderRadius.xl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.colors.accent,
+    ...theme.shadows.medium,
   },
   statNumber: {
-    color: '#2C3E50',
+    color: theme.colors.accentDark,
     fontWeight: 'bold',
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.fontSize.xxl,
   },
   statLabel: {
-    color: '#7F8C8D',
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: theme.spacing.xs,
+    fontSize: theme.typography.fontSize.xs,
   },
   chartCard: {
     marginHorizontal: theme.spacing.md,
     marginBottom: theme.spacing.md,
     padding: theme.spacing.lg,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
+    ...theme.shadows.medium,
   },
   chartHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   chartTitle: {
     marginLeft: theme.spacing.sm,
-    color: '#2C3E50',
+    color: theme.colors.text,
     fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
   },
   chart: {
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   recentList: {
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
   recentItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F2F6',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.background,
   },
   recentIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E8F5E8',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.accentSoft,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: theme.spacing.sm,
+    marginRight: theme.spacing.md,
   },
   recentContent: {
     flex: 1,
   },
   recentPlant: {
-    color: '#2C3E50',
+    color: theme.colors.text,
     fontWeight: '500',
   },
   recentDetails: {
-    color: '#7F8C8D',
-    marginTop: 2,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+    fontSize: theme.typography.fontSize.xs,
   },
   recentGarden: {
-    color: '#5D8A3A',
+    color: theme.colors.logo.green,
     fontWeight: '500',
-    fontSize: 12,
+    fontSize: theme.typography.fontSize.sm,
   },
   bottomSpacer: {
     height: theme.spacing.xl,
+  },
+  // Export section styles
+  exportCard: {
+    marginHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.accentSoft,
+    borderLeftWidth: 4,
+    borderLeftColor: theme.colors.accent,
+  },
+  exportHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  exportIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  exportContent: {
+    flex: 1,
+  },
+  exportTitle: {
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: theme.spacing.xs,
+  },
+  exportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.accent,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    gap: theme.spacing.sm,
+  },
+  exportButtonText: {
+    fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: theme.borderRadius.xxl,
+    backgroundColor: theme.colors.surface,
+    padding: theme.spacing.lg,
+    gap: theme.spacing.md,
+    ...theme.shadows.large,
+  },
+  modalHeader: {
+    marginBottom: theme.spacing.sm,
+  },
+  modalTitle: {
+    color: theme.colors.text,
+    fontWeight: '600',
+    marginBottom: theme.spacing.xs,
+  },
+  gardenSelectionContainer: {
+    gap: theme.spacing.sm,
+    maxHeight: 300,
+  },
+  gardenOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.background,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  gardenOptionSelected: {
+    backgroundColor: theme.colors.accentSoft,
+    borderColor: theme.colors.accent,
+  },
+  gardenOptionCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: theme.colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  gardenOptionInfo: {
+    flex: 1,
+  },
+  gardenOptionText: {
+    color: theme.colors.text,
+    fontWeight: '500',
+    marginBottom: theme.spacing.xs / 2,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalExportButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    backgroundColor: theme.colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing.sm,
+  },
+  modalExportButtonText: {
+    fontWeight: '600',
   },
 });

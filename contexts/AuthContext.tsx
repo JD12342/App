@@ -66,10 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           // Set loading to false immediately after loading from storage
           setIsLoading(false);
         } else if (mounted) {
-          // No stored user and not in guest mode - default to guest mode
-          console.log('No authenticated user found, defaulting to guest mode');
-          await AsyncStorage.setItem(GUEST_MODE_KEY, 'true');
-          setIsGuest(true);
+          // No stored user and not in guest mode - stay unauthenticated
+          console.log('No authenticated user found, staying on sign-in page');
+          setIsGuest(false);
           setUser(null);
           setIsLoading(false);
         }
@@ -147,11 +146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       : () => {};
     
     if (!firebaseAvailable && mounted) {
-      // Ensure guest mode when Firebase is unavailable
-  void AsyncStorage.setItem(GUEST_MODE_KEY, 'true').catch((error) => {
-        console.error('Failed to enable guest mode:', error);
-      });
-      setIsGuest(true);
+      // When Firebase is unavailable, stay unauthenticated instead of forcing guest mode
+      console.log('Firebase unavailable, staying on sign-in page');
+      setIsGuest(false);
       setUser(null);
       setIsLoading(false);
     }
@@ -171,6 +168,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setIsLoading(true);
     try {
       const user = await authService.signIn(email, password);
+      
+      // Check if we were in guest mode - if so, sync data and photos
+      const wasGuest = await AsyncStorage.getItem(GUEST_MODE_KEY);
+      if (wasGuest === 'true') {
+        console.log('Migrating data from guest mode to authenticated account...');
+        
+        try {
+          // Import the photo sync functionality
+          const { syncPendingPhotos } = require('../lib/photoSync');
+          
+          // Sync any pending photos to Firebase Storage
+          console.log('Syncing pending photos to Firebase Storage...');
+          await syncPendingPhotos();
+        } catch (syncError) {
+          console.error('Error syncing photos:', syncError);
+          // Continue with sign in even if photo sync fails
+        }
+      }
+      
       // Clear guest mode and update user state
       await AsyncStorage.removeItem(GUEST_MODE_KEY);
       setIsGuest(false);

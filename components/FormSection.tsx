@@ -31,14 +31,26 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
+    backgroundColor: theme.colors.background,
+    borderRadius: theme.borderRadius.xl,
+    padding: theme.spacing.lg,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   title: {
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
     paddingHorizontal: theme.spacing.sm,
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.primary,
+    textAlign: 'center',
   },
   content: {
     width: '100%',
-    gap: theme.spacing.sm,
+    gap: theme.spacing.md,
   },
 });
 

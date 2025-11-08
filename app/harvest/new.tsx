@@ -1,19 +1,17 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    TouchableWithoutFeedback,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Button from '../../components/Button';
@@ -37,7 +35,6 @@ export default function NewHarvestScreen() {
   const [unit, setUnit] = useState<Unit>('count');
   const [date, setDate] = useState(new Date());
   const [notes, setNotes] = useState('');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [showUnitPicker, setShowUnitPicker] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [gardenName, setGardenName] = useState('');
@@ -84,60 +81,32 @@ export default function NewHarvestScreen() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const pickImage = async () => {
-    try {
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (status !== 'granted') {
-        Alert.alert(
-          'Permission Required',
-          'Sorry, we need camera roll permissions to upload images.'
-        );
-        return;
-      }
-      
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      
-      if (!result.canceled) {
-        setPhotoUri(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!validate() || !params.gardenId) return;
     
     setIsLoading(true);
     try {
-      // In a real app, you would upload the photo to storage and get a URL
-      // For this example, we'll just use the local URI
-      const photoUrl = photoUri;
-      
-      await harvestService.createHarvest({
+      const harvest = await harvestService.createHarvest({
         gardenId: params.gardenId,
         plantName: plantName.trim(),
         quantity: Number(quantity),
         unit,
         date: date.getTime(),
-        notes: notes.trim() || undefined,
-        photoUrl: photoUrl || undefined,
+        notes: notes.trim() || undefined
       });
       
+      if (!harvest) {
+        throw new Error('Failed to create harvest');
+      }
+      
+      // Navigate back immediately (user sees success)
       router.back();
     } catch (error) {
       console.error('Error saving harvest:', error);
-    } finally {
+      Alert.alert('Error', 'Failed to save harvest. Please try again.');
       setIsLoading(false);
     }
+    // Note: we don't set isLoading to false here because we've already navigated back
   };
 
   const formatDate = (date: Date) => {
@@ -260,40 +229,7 @@ export default function NewHarvestScreen() {
             />
           </FormSection>
 
-          <FormSection title="Photo (Optional)">
-            <TouchableOpacity
-              style={styles.photoPickerButton}
-              onPress={pickImage}
-            >
-              {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.photoPreview} />
-              ) : (
-                <View style={styles.photoPlaceholder}>
-                  <MaterialIcons
-                    name="add-a-photo"
-                    size={32}
-                    color={theme.colors.primary}
-                  />
-                  <Typography
-                    variant="body2"
-                    color={theme.colors.primary}
-                    style={styles.photoText}
-                  >
-                    Add Photo
-                  </Typography>
-                </View>
-              )}
-            </TouchableOpacity>
-            
-            {photoUri && (
-              <Button
-                title="Remove Photo"
-                onPress={() => setPhotoUri(null)}
-                variant="text"
-                style={styles.removePhotoButton}
-              />
-            )}
-          </FormSection>
+
         </ScrollView>
 
         <Modal
@@ -440,33 +376,7 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  photoPickerButton: {
-    alignSelf: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  photoPlaceholder: {
-    width: 150,
-    height: 150,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderStyle: 'dashed',
-    borderRadius: theme.borderRadius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.backgroundSecondary,
-  },
-  photoText: {
-    marginTop: theme.spacing.xs,
-  },
-  photoPreview: {
-    width: 150,
-    height: 150,
-    borderRadius: theme.borderRadius.md,
-  },
-  removePhotoButton: {
-    alignSelf: 'center',
-    marginTop: theme.spacing.xs,
-  },
+
   buttonContainer: {
     padding: theme.spacing.md,
     borderTopWidth: 1,

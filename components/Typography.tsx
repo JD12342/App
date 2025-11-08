@@ -4,7 +4,7 @@ import theme from '../lib/theme';
 
 interface TypographyProps {
   children: React.ReactNode;
-  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body1' | 'body2' | 'caption' | 'button';
+  variant?: 'display' | 'h1' | 'h2' | 'h3' | 'h4' | 'body1' | 'body2' | 'caption' | 'button';
   style?: StyleProp<TextStyle>;
   color?: string;
   align?: 'auto' | 'left' | 'right' | 'center' | 'justify';
@@ -36,6 +36,12 @@ const Typography: React.FC<TypographyProps> = ({
 };
 
 const styles = StyleSheet.create({
+  display: {
+    fontSize: theme.typography.fontSize.display,
+    fontWeight: theme.typography.fontWeight.bold,
+    lineHeight: theme.responsive.isSmallDevice ? 40 : 44,
+    marginBottom: theme.spacing.sm,
+  },
   h1: {
     fontSize: theme.typography.fontSize.xxxl,
     fontWeight: theme.typography.fontWeight.bold,

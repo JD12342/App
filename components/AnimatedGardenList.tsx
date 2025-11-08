@@ -55,16 +55,20 @@ const AnimatedGardenList: React.FC<AnimatedGardenListProps> = ({
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200, // Further reduced from 300
-          delay: index * 25, // Further reduced from 50
+          duration: 400,
+          delay: index * 50,
           useNativeDriver: true,
         }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 200, // Further reduced from 300
-          delay: index * 25, // Further reduced from 50
-          useNativeDriver: true,
-        }),
+        Animated.sequence([
+          Animated.delay(index * 50),
+          Animated.spring(translateY, {
+            toValue: 0,
+            damping: 15,
+            mass: 1,
+            stiffness: 150,
+            useNativeDriver: true,
+          }),
+        ]),
       ]).start();
     }
     
@@ -116,15 +120,18 @@ const AnimatedGardenList: React.FC<AnimatedGardenListProps> = ({
       updateCellsBatchingPeriod={50} // Batch cell updates
       getItemLayout={(data, index) => (
         // Pre-calculate item dimensions to improve scroll performance
-        { length: 110, offset: 110 * index, index }
+        { length: 140, offset: 140 * index, index }
       )}
+      bounces={true}
+      bouncesZoom={true}
+      decelerationRate="normal"
     />
   );
 };
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
     paddingTop: theme.spacing.sm,
     paddingBottom: theme.spacing.xxl * 2, // Extra padding for FAB
     width: '100%',

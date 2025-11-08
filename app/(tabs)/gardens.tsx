@@ -1,12 +1,14 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnimatedGardenList from '../../components/AnimatedGardenList';
 import FAB from '../../components/FAB';
 import GardenEmptyState from '../../components/GardenEmptyState';
 import Typography from '../../components/Typography';
+import { AuthContext } from '../../contexts/AuthContext';
 import { gardenService, harvestService } from '../../lib/dataService';
 import theme from '../../lib/theme';
 import { Garden, Harvest } from '../../types/types';
@@ -14,12 +16,51 @@ import { Garden, Harvest } from '../../types/types';
 export default function MyGardensScreen() {
   const [gardens, setGardens] = useState<Garden[]>([]);
   const [harvests, setHarvests] = useState<Harvest[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
+  const { user, isGuest } = useContext(AuthContext);
 
-  const loadData = async () => {
+  useEffect(() => {
+    // Set up real-time listener for gardens and harvests
+    const setupListeners = async () => {
+      try {
+        const [gardensData, harvestsData] = await Promise.all([
+          gardenService.getGardens(),
+          harvestService.getHarvests(),
+        ]);
+        setGardens(gardensData);
+        setHarvests(harvestsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+
+    setupListeners();
+  }, [user, isGuest]);
+
+  // Reload data when user navigates back to this tab
+  useFocusEffect(
+    useCallback(() => {
+      const loadData = async () => {
+        try {
+          const [gardensData, harvestsData] = await Promise.all([
+            gardenService.getGardens(),
+            harvestService.getHarvests(),
+          ]);
+          setGardens(gardensData);
+          setHarvests(harvestsData);
+        } catch (error) {
+          console.error('Error loading data:', error);
+        }
+      };
+
+      loadData();
+    }, [])
+  );
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
     try {
-      setIsLoading(true);
       const [gardensData, harvestsData] = await Promise.all([
         gardenService.getGardens(),
         harvestService.getHarvests(),
@@ -27,20 +68,16 @@ export default function MyGardensScreen() {
       setGardens(gardensData);
       setHarvests(harvestsData);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error refreshing data:', error);
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.mainContent}>
-        {gardens.length === 0 && !isLoading ? (
+        {gardens.length === 0 ? (
           <View style={styles.content}>
             <GardenEmptyState
               onAddGarden={() => router.push('/garden/new')}
@@ -50,24 +87,24 @@ export default function MyGardensScreen() {
           <AnimatedGardenList
             gardens={gardens}
             harvests={harvests}
-            refreshing={isLoading}
-            onRefresh={loadData}
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
             onGardenPress={(garden) => router.push(`/garden/${garden.id}`)}
             headerComponent={
               <View style={styles.headerContainer}>
                 <View style={styles.headerContent}>
                   <MaterialCommunityIcons 
                     name="sprout" 
-                    size={28} 
-                    color={theme.colors.primary}
+                    size={36} 
+                    color={theme.colors.logo.green}
                     style={styles.headerIcon}
                   />
                   <View style={styles.headerText}>
                     <Typography variant="h2" style={styles.title}>
-                      My Gardens 🏡
+                      My Gardens
                     </Typography>
-                    <Typography variant="body1" style={styles.subtitle}>
-                      Manage your gardens and harvests
+                    <Typography variant="body2" color={theme.colors.textSecondary}>
+                      Manage your garden collection
                     </Typography>
                   </View>
                 </View>

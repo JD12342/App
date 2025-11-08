@@ -12,6 +12,8 @@ export interface Garden {
   id: string;
   name: string;
   location?: string;
+  description?: string;
+  photoUrl?: string;
   createdAt: number; // timestamp
   updatedAt: number; // timestamp
 }

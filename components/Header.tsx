@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({
       <View style={styles.leftContainer}>
         {showBackButton && (
           <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <AntDesign name="arrowleft" size={24} color={theme.colors.text} />
+            <AntDesign name="arrow-left" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         )}
       </View>
@@ -59,26 +59,35 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    minHeight: 60,
+    borderBottomLeftRadius: theme.borderRadius.xl,
+    borderBottomRightRadius: theme.borderRadius.xl,
+    minHeight: 64,
+    shadowColor: theme.colors.text,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 4,
   },
   leftContainer: {
-    width: 40,
+    width: 44,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
   backButton: {
     padding: theme.spacing.xs,
-    minWidth: 40,
-    minHeight: 40,
+    minWidth: 44,
+    minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: theme.colors.backgroundSecondary,
+    borderRadius: theme.borderRadius.round,
   },
   title: {
     flex: 1,
     textAlign: 'center',
     paddingHorizontal: theme.spacing.sm,
+    fontSize: 24,
+    fontWeight: '700',
   },
   rightContainer: {
     width: 40,

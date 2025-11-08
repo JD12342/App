@@ -248,7 +248,24 @@ class DataService {
       }
 
       this.currentUserId = newUserId;
-      await this.runSync('auth-change');
+      
+      // Check if we need to migrate data from guest mode
+      try {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        const needsMigration = await AsyncStorage.getItem('@GardenTracker:needsDataMigration');
+        if (needsMigration === 'true') {
+          console.log('Detected guest mode data migration - forcing immediate sync...');
+          await AsyncStorage.removeItem('@GardenTracker:needsDataMigration');
+          // Force sync with high priority
+          await this.runSync('guest-migration');
+        } else {
+          await this.runSync('auth-change');
+        }
+      } catch (error) {
+        console.warn('Error checking migration flag:', error);
+        await this.runSync('auth-change');
+      }
+      
       this.startAutoSync();
       return;
     }
